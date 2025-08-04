@@ -20,47 +20,78 @@ jobs:
 
       - name: Set Git Config
         run: |
-          git config --global user.email "$"
-          git config --global user.name "$"
-        shell: bash
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
 
-      - name: Check for Existing Tags and Create
-        id: check_tags
+      - name: Get Latest Tag and Compute Next
+        id: get_tag
         run: |
-          tags=$(git ls-remote --tags origin)
-          if [ -z "$tags" ]; then
-            echo "No tags found."
-            git tag -a "v0.1.0" -m "Initial release"
-            git push origin "v0.1.0"
-            echo "::set-output name=new_tag::v0.1.0"
-          else
-            echo "Tags found:"
-            remote_tags=$(git ls-remote --tags origin | awk '{print $2}' | awk -F '/' '{print $3}' | sort -V | tail -n 1)
-            remote_tag="${remote_tags::-3}"
-            echo $remote_tag
-            echo "Existing tag is $remote_tag"
+          git fetch --tags
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $latest_tag"
 
-            # Internal Field Separator
-            IFS='.' read -r major minor patch <<< "${remote_tag:1}"
+          version="${latest_tag#v}" # remove 'v'
+          IFS='.' read -r major minor patch <<< "$version"
 
-            minor=$((minor + 1))
-            new_tag_version="v$major.$minor.$patch"
-            echo $new_tag_version
+          release_type="${{ github.event.inputs.release_type }}"
 
-            git tag -a "${new_tag_version}" -m "Release -${new_tag_version}"
-            git push origin "${new_tag_version}"
+          case "$release_type" in
+            major)
+              major=$((major + 1)); minor=0; patch=0 ;;
+            minor)
+              minor=$((minor + 1)); patch=0 ;;
+            patch)
+              patch=$((patch + 1)) ;;
+            *)
+              echo "Invalid release type"; exit 1 ;;
+          esac
 
-            echo "::set-output name=new_tag::${new_tag_version}"
+          new_tag="v$major.$minor.$patch"
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+          git tag -a "${{ steps.get_tag.outputs.new_tag }}" -m "Release ${{ steps.get_tag.outputs.new_tag }}"
+          git push origin "${{ steps.get_tag.outputs.new_tag }}"
+
+      - name: Generate Release Notes
+        id: generate_notes
+        run: |
+          git fetch --tags
+          latest="${{ steps.get_tag.outputs.latest_tag }}"
+          current="${{ steps.get_tag.outputs.new_tag }}"
+
+          commits=$(git log "$latest"..HEAD --pretty=format:"%s (%h)")
+          echo "$commits" > commits.txt
+
+          features=$(echo "$commits" | grep "^feat:" || true)
+          fixes=$(echo "$commits" | grep "^fix:" || true)
+
+          echo "## What's Changed" > notes.txt
+
+          if [ -n "$features" ]; then
+            echo -e "\n### 🚀 Features" >> notes.txt
+            echo "$features" | sed 's/^feat:/-/' >> notes.txt
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
 
-      - name: Create Release
+          if [ -n "$fixes" ]; then
+            echo -e "\n### 🐛 Bug Fixes" >> notes.txt
+            echo "$fixes" | sed 's/^fix:/-/' >> notes.txt
+          fi
+
+          echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/commits/${current})" >> notes.txt
+
+          cat notes.txt
+          echo "release_body<<EOF" >> $GITHUB_OUTPUT
+          cat notes.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          tag_name: $
-          release_name: Release $
-          body: |
-            Get the Release Details__
+          tag_name: ${{ steps.get_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.get_tag.outputs.new_tag }}
+          body: ${{ steps.generate_notes.outputs.release_body }}
