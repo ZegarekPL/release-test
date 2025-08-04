@@ -96,9 +96,12 @@ jobs:
             echo "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
           fi
           
-          echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/commits/${current})" >> notes.txt
-          
-          # Set output properly
+          if [ "$is_first" = "true" ]; then
+            echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/commits/${current})" >> notes.txt
+          else
+            echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/compare/${latest}...${current})" >> notes.txt
+          fi
+
           {
             echo "release_body<<EOF"
             cat notes.txt
