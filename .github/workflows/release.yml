@@ -77,30 +77,37 @@ jobs:
           latest="${{ steps.get_tag.outputs.latest_tag }}"
           current="${{ steps.get_tag.outputs.new_tag }}"
           is_first="${{ steps.get_tag.outputs.is_first_release }}"
-          
+
           if [ "$is_first" = "true" ]; then
-            commits=$(git log --pretty=format:"%s (%h)")
+            range=""
           else
-            commits=$(git log "$latest"..HEAD --pretty=format:"%s (%h)")
+            range="$latest..HEAD"
           fi
-          
-          echo "$commits" > commits.txt
-          
-          features=$(echo "$commits" | grep -E "^feat:" || true)
-          fixes=$(echo "$commits" | grep -E "^fix:" || true)
-          
+
+          commits=$(git log $range --pretty=format:"%s (%h) - %ae")
+
+          echo "$commits" | while IFS= read -r line; do
+            email=$(echo "$line" | sed -E 's/.* - ([^ ]+)$/\1/')
+            username=$(echo "$email" | sed -E 's/@users\.noreply\.github\.com//')
+            line_with_link=$(echo "$line" | sed -E "s/ - $email/ by [@$username](https://github.com/$username)/")
+            echo "$line_with_link"
+          done > commits_formatted.txt
+
+          features=$(grep -E "^feat:" commits_formatted.txt || true)
+          fixes=$(grep -E "^fix:" commits_formatted.txt || true)
+
           echo "## What's Changed" > notes.txt
-          
+
           if [ -n "$features" ]; then
             echo -e "\n### 🚀 Features" >> notes.txt
             echo "$features" | sed -E 's/^feat: /- /' >> notes.txt
           fi
-          
+
           if [ -n "$fixes" ]; then
             echo -e "\n### 🐛 Bug Fixes" >> notes.txt
             echo "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
           fi
-          
+
           if [ "$is_first" = "true" ]; then
             echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/commits/${current})" >> notes.txt
           else
