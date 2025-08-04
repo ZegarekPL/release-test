@@ -69,36 +69,38 @@ jobs:
           latest="${{ steps.get_tag.outputs.latest_tag }}"
           current="${{ steps.get_tag.outputs.new_tag }}"
           is_first="${{ steps.get_tag.outputs.is_first_release }}"
-
+          
           if [ "$is_first" = "true" ]; then
             commits=$(git log --pretty=format:"%s (%h)")
           else
             commits=$(git log "$latest"..HEAD --pretty=format:"%s (%h)")
           fi
-
+          
           echo "$commits" > commits.txt
-
-          features=$(echo "$commits" | grep "^feat:" || true)
-          fixes=$(echo "$commits" | grep "^fix:" || true)
-
+          
+          features=$(echo "$commits" | grep -E "^feat:" || true)
+          fixes=$(echo "$commits" | grep -E "^fix:" || true)
+          
           echo "## What's Changed" > notes.txt
-
+          
           if [ -n "$features" ]; then
             echo -e "\n### 🚀 Features" >> notes.txt
-            echo "$features" | sed 's/^feat:/-/' >> notes.txt
+            echo "$features" | sed -E 's/^feat: /- /' >> notes.txt
           fi
-
+          
           if [ -n "$fixes" ]; then
             echo -e "\n### 🐛 Bug Fixes" >> notes.txt
-            echo "$fixes" | sed 's/^fix:/-/' >> notes.txt
+            echo "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
           fi
-
+          
           echo -e "\n---\n\n📜 [Full Changelog](https://github.com/${{ github.repository }}/commits/${current})" >> notes.txt
-
-          cat notes.txt
-          echo "release_body<<EOF" >> $GITHUB_OUTPUT
-          cat notes.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Set output properly
+          {
+            echo "release_body<<EOF"
+            cat notes.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
