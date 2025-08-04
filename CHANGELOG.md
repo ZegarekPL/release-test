@@ -1,5 +1,7 @@
 # Changelog
 
+## <small>0.2.1 (2025-08-04)</small>
+
 ## 0.2.0 (2025-08-04)
 
 * fix: add addUntrackedFiles ([c3e4a06](https://github.com/ZegarekPL/release-test/commit/c3e4a06))
