@@ -4,12 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "release": "release-it"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ZegarekPL/release-test.git"
+    "url": "git+https://github.com/ZegarekPL/release-test.git"
   },
   "keywords": [],
   "author": "",
@@ -30,8 +29,7 @@
       "commitMessage": "chore: release v${version}"
     },
     "github": {
-      "release": true,
-      "token": "${GITHUB_TOKEN}"
+      "release": true
     },
     "npm": {
       "publish": false
@@ -39,7 +37,20 @@
     "plugins": {
       "@release-it/conventional-changelog": {
         "infile": "CHANGELOG.md",
-        "preset": "conventionalcommits"
+        "preset": {
+          "name": "conventionalcommits",
+          "types": [
+            {
+              "type": "feat",
+              "section": "Features"
+            },
+            {
+              "type": "fix",
+              "section": "Bug Fixes"
+            },
+            {}
+          ]
+        }
       }
     }
   },
