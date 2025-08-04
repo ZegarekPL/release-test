@@ -1,5 +1,9 @@
 # Changelog
 
+## <small>0.2.2 (2025-08-04)</small>
+
+* fix: delete sth ([f9a92f6](https://github.com/ZegarekPL/release-test/commit/f9a92f6))
+
 ## <small>0.2.1 (2025-08-04)</small>
 
 ## 0.2.0 (2025-08-04)
