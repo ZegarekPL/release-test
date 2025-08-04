@@ -28,12 +28,15 @@ jobs:
         run: |
           git fetch --tags
 
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$latest_tag" ]; then
+          # Get all tags, sort them, take the latest one
+          all_tags=$(git tag --sort=-v:refname)
+          
+          if [ -z "$all_tags" ]; then
             echo "No tags found. Using v0.0.0 as base."
             latest_tag="v0.0.0"
             is_first_release=true
           else
+            latest_tag=$(echo "$all_tags" | head -n 1)
             is_first_release=false
           fi
 
