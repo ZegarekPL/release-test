@@ -84,18 +84,31 @@ jobs:
             range="$latest..HEAD"
           fi
 
+          echo "Using git log range: '$range'"
+
           commits=$(git log $range --pretty=format:"%s (%h) - @%an")
+          echo "All commits:"
+          echo "$commits"
+          echo "-----"
 
           features=$(echo "$commits" | grep -E "feat:" || true)
           fixes=$(echo "$commits" | grep -E "fix:" || true)
-          
+
+          echo "Filtered features commits:"
+          echo "$features"
+          echo "-----"
+
+          echo "Filtered fixes commits:"
+          echo "$fixes"
+          echo "-----"
+
           echo "## What's Changed" > notes.txt
-          
+
           if [ -n "$features" ]; then
             echo -e "\n### 🚀 Features" >> notes.txt
             printf '%s\n' "$features" | sed -E 's/^feat: /- /' >> notes.txt
           fi
-          
+
           if [ -n "$fixes" ]; then
             echo -e "\n### 🐛 Bug Fixes" >> notes.txt
             printf '%s\n' "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
