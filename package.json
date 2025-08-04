@@ -28,7 +28,8 @@
   },
   "release-it": {
     "git": {
-      "commitMessage": "chore: release v${version}"
+      "commitMessage": "chore: release v${version}",
+      "addUntrackedFiles": true
     },
     "github": {
       "release": true
