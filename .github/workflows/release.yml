@@ -86,19 +86,19 @@ jobs:
 
           commits=$(git log $range --pretty=format:"%s (%h) - @%an")
 
-          features=$(echo "$commits" | grep -E "^feat:" || true)
-          fixes=$(echo "$commits" | grep -E "^fix:" || true)
-
+          features=$(echo "$commits" | grep -E "feat:" || true)
+          fixes=$(echo "$commits" | grep -E "fix:" || true)
+          
           echo "## What's Changed" > notes.txt
-
+          
           if [ -n "$features" ]; then
             echo -e "\n### 🚀 Features" >> notes.txt
-            echo "$features" | sed -E 's/^feat: /- /' >> notes.txt
+            printf '%s\n' "$features" | sed -E 's/^feat: /- /' >> notes.txt
           fi
-
+          
           if [ -n "$fixes" ]; then
             echo -e "\n### 🐛 Bug Fixes" >> notes.txt
-            echo "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
+            printf '%s\n' "$fixes" | sed -E 's/^fix: /- /' >> notes.txt
           fi
 
           if [ "$is_first" = "true" ]; then
