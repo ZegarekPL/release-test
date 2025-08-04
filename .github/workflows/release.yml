@@ -81,7 +81,7 @@ jobs:
           if [ "$is_first" = "true" ]; then
             range=""
           else
-            range="$latest..HEAD"
+            range="$latest..${{ steps.get_tag.outputs.new_tag }}"
           fi
 
           echo "Using git log range: '$range'"
