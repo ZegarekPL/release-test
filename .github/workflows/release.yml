@@ -89,7 +89,7 @@ jobs:
           echo "$commits" | while IFS= read -r line; do
             email=$(echo "$line" | sed -E 's/.* - ([^ ]+)$/\1/')
             username=$(echo "$email" | sed -E 's/@users\.noreply\.github\.com//')
-            line_with_link=$(echo "$line" | sed -E "s/ - $email/ by [@$username](https://github.com/$username)/")
+            line_with_link=$(echo "$line" | sed -E "s| - $email| by [@$username](https://github.com/$username)|")
             echo "$line_with_link"
           done > commits_formatted.txt
 
