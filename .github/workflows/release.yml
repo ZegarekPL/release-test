@@ -23,18 +23,24 @@ jobs:
           git config --global user.email "you@example.com"
           git config --global user.name "Your Name"
 
-      - name: Get Latest Tag and Compute Next
+      - name: Determine Version
         id: get_tag
         run: |
           git fetch --tags
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "Latest tag: $latest_tag"
+
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$latest_tag" ]; then
+            echo "No tags found. Using v0.0.0 as base."
+            latest_tag="v0.0.0"
+            is_first_release=true
+          else
+            is_first_release=false
+          fi
 
           version="${latest_tag#v}" # remove 'v'
-          IFS='.' read -r major minor patch <<< "$version"
+          IFS='.' read -r major minor patch <<< "${version:-0.0.0}"
 
           release_type="${{ github.event.inputs.release_type }}"
-
           case "$release_type" in
             major)
               major=$((major + 1)); minor=0; patch=0 ;;
@@ -47,8 +53,10 @@ jobs:
           esac
 
           new_tag="v$major.$minor.$patch"
+
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "is_first_release=$is_first_release" >> $GITHUB_OUTPUT
 
       - name: Create Git Tag
         run: |
@@ -58,11 +66,16 @@ jobs:
       - name: Generate Release Notes
         id: generate_notes
         run: |
-          git fetch --tags
           latest="${{ steps.get_tag.outputs.latest_tag }}"
           current="${{ steps.get_tag.outputs.new_tag }}"
+          is_first="${{ steps.get_tag.outputs.is_first_release }}"
 
-          commits=$(git log "$latest"..HEAD --pretty=format:"%s (%h)")
+          if [ "$is_first" = "true" ]; then
+            commits=$(git log --pretty=format:"%s (%h)")
+          else
+            commits=$(git log "$latest"..HEAD --pretty=format:"%s (%h)")
+          fi
+
           echo "$commits" > commits.txt
 
           features=$(echo "$commits" | grep "^feat:" || true)
