@@ -35,7 +35,7 @@ jobs:
 
           # Get all tags, sort them, take the latest one
           all_tags=$(git tag --sort=-v:refname)
-          
+
           if [ -z "$all_tags" ]; then
             echo "No tags found. Using v0.0.0 as base."
             latest_tag="v0.0.0"
@@ -45,7 +45,7 @@ jobs:
             is_first_release=false
           fi
 
-          version="${latest_tag#v}" # remove 'v'
+          version="${latest_tag#v}"
           IFS='.' read -r major minor patch <<< "${version:-0.0.0}"
 
           release_type="${{ github.event.inputs.release_type }}"
@@ -84,17 +84,10 @@ jobs:
             range="$latest..HEAD"
           fi
 
-          commits=$(git log $range --pretty=format:"%s (%h) - %ae")
+          commits=$(git log $range --pretty=format:"%s (%h) - %an")
 
-          echo "$commits" | while IFS= read -r line; do
-            email=$(echo "$line" | sed -E 's/.* - ([^ ]+)$/\1/')
-            username=$(echo "$email" | sed -E 's/@users\.noreply\.github\.com//')
-            line_with_link=$(echo "$line" | sed -E "s| - $email| by [@$username](https://github.com/$username)|")
-            echo "$line_with_link"
-          done > commits_formatted.txt
-
-          features=$(grep -E "^feat:" commits_formatted.txt || true)
-          fixes=$(grep -E "^fix:" commits_formatted.txt || true)
+          features=$(echo "$commits" | grep -E "^feat:" || true)
+          fixes=$(echo "$commits" | grep -E "^fix:" || true)
 
           echo "## What's Changed" > notes.txt
 
