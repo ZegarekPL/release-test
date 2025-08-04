@@ -33,7 +33,6 @@ jobs:
         run: |
           git fetch --tags
 
-          # Get all tags, sort them, take the latest one
           all_tags=$(git tag --sort=-v:refname)
 
           if [ -z "$all_tags" ]; then
@@ -81,18 +80,19 @@ jobs:
           if [ "$is_first" = "true" ]; then
             range=""
           else
-            range="$latest..${{ steps.get_tag.outputs.new_tag }}"
+            range="$latest..$current"
           fi
 
           echo "Using git log range: '$range'"
 
           commits=$(git log $range --pretty=format:"%s (%h) - @%an")
+
           echo "All commits:"
           echo "$commits"
           echo "-----"
 
-          features=$(echo "$commits" | grep -E "feat:" || true)
-          fixes=$(echo "$commits" | grep -E "fix:" || true)
+          features=$(printf '%s\n' "$commits" | grep -E "feat:" || true)
+          fixes=$(printf '%s\n' "$commits" | grep -E "fix:" || true)
 
           echo "Filtered features commits:"
           echo "$features"
