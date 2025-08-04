@@ -84,7 +84,7 @@ jobs:
             range="$latest..HEAD"
           fi
 
-          commits=$(git log $range --pretty=format:"%s (%h) - %an")
+          commits=$(git log $range --pretty=format:"%s (%h) - @%an")
 
           features=$(echo "$commits" | grep -E "^feat:" || true)
           fixes=$(echo "$commits" | grep -E "^fix:" || true)
